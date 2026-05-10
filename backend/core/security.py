@@ -1,46 +1,36 @@
-"""Core security utilities: encryption, decryption, key generation."""
+"""Encryption utilities using Fernet (AES 128 in CBC mode)."""
 
-import os
 import base64
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
+import os
+from cryptography.fernet import Fernet
+from sqlalchemy.orm import Session
+import uuid
+from ..database.database import Key, Data
 
-# Simple in-memory key store for demo purposes
-_key_store = {}
+# In a real system keys would be stored securely (e.g., KMS). Here we keep them in DB.
 
-# AES-256 GCM parameters
-_KEY_SIZE = 32  # 256 bits
-_NONCE_SIZE = 12
+def _get_key_bytes(key_id: str, db: Session) -> bytes:
+    key_obj = db.query(Key).filter(Key.key_id == key_id).first()
+    if not key_obj:
+        raise ValueError(f"Key {key_id} not found")
+    return base64.urlsafe_b64decode(key_obj.key_value)
 
+def encrypt_data(plaintext: str, key_id: str, db: Session) -> str:
+    key_bytes = _get_key_bytes(key_id, db)
+    f = Fernet(base64.urlsafe_b64encode(key_bytes))
+    return f.encrypt(plaintext.encode()).decode()
 
-def generate_key() -> str:
-    key = os.urandom(_KEY_SIZE)
-    key_id = base64.urlsafe_b64encode(os.urandom(16)).decode("utf-8")
-    _key_store[key_id] = key
-    return key_id
+def decrypt_data(ciphertext: str, key_id: str, db: Session) -> str:
+    key_bytes = _get_key_bytes(key_id, db)
+    f = Fernet(base64.urlsafe_b64encode(key_bytes))
+    return f.decrypt(ciphertext.encode()).decode()
 
-
-def _get_key(key_id: str) -> bytes:
-    key = _key_store.get(key_id)
-    if not key:
-        raise ValueError("Key not found")
-    return key
-
-
-def encrypt_data(plaintext: str, key_id: str) -> str:
-    key = _get_key(key_id)
-    nonce = os.urandom(_NONCE_SIZE)
-    encryptor = Cipher(algorithms.AES(key), modes.GCM(nonce), backend=default_backend()).encryptor()
-    ct = encryptor.update(plaintext.encode("utf-8")) + encryptor.finalize()
-    return base64.urlsafe_b64encode(nonce + encryptor.tag + ct).decode("utf-8")
-
-
-def decrypt_data(ciphertext: str, key_id: str) -> str:
-    key = _get_key(key_id)
-    raw = base64.urlsafe_b64decode(ciphertext.encode("utf-8"))
-    nonce = raw[:_NONCE_SIZE]
-    tag = raw[_NONCE_SIZE:_NONCE_SIZE+16]
-    ct = raw[_NONCE_SIZE+16:]
-    decryptor = Cipher(algorithms.AES(key), modes.GCM(nonce, tag), backend=default_backend()).decryptor()
-    plaintext = decryptor.update(ct) + decryptor.finalize()
-    return plaintext.decode("utf-8")
+def generate_key(key_name: str, db: Session) -> str:
+    # Generate a 32-byte key for Fernet
+    key_bytes = os.urandom(32)
+    key_value = base64.urlsafe_b64encode(key_bytes).decode()
+    key_obj = Key(key_id=str(uuid.uuid4()), key_name=key_name, key_value=key_value)
+    db.add(key_obj)
+    db.commit()
+    db.refresh(key_obj)
+    return key_obj.key_id
