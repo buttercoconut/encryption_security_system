@@ -1,116 +1,53 @@
 <template>
-  <div class="encryption-component">
-    <h2>Encryption Demo</h2>
-    <div class="form-group">
-      <label for="plaintext">Plaintext</label>
-      <textarea id="plaintext" v-model="plaintext" rows="3"></textarea>
-    </div>
-    <div class="form-group">
-      <label for="keyId">Key ID</label>
-      <input id="keyId" v-model="keyId" type="text" placeholder="Generated key ID" />
-    </div>
-    <div class="buttons">
-      <button @click="generateKey">Generate Key</button>
-      <button @click="encrypt">Encrypt</button>
-      <button @click="decrypt">Decrypt</button>
-    </div>
-    <div class="result" v-if="ciphertext">
-      <h3>Ciphertext</h3>
-      <pre>{{ ciphertext }}</pre>
-    </div>
-    <div class="result" v-if="decryptedText">
-      <h3>Decrypted Text</h3>
-      <pre>{{ decryptedText }}</pre>
-    </div>
+  <div class="encryption-box">
+    <h2>Data Encryption / Decryption</h2>
+    <textarea v-model="plainText" placeholder="Enter plain text" rows="4" class="form-control"></textarea>
+    <button @click="encrypt" class="btn btn-primary mt-2">Encrypt</button>
+    <textarea v-model="encryptedText" placeholder="Encrypted output" rows="4" class="form-control mt-2" readonly></textarea>
+    <button @click="decrypt" class="btn btn-secondary mt-2">Decrypt</button>
+    <textarea v-model="decryptedText" placeholder="Decrypted output" rows="4" class="form-control mt-2" readonly></textarea>
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref } from 'vue';
 import axios from 'axios';
 
-const plaintext = ref('');
-const keyId = ref('');
-const ciphertext = ref('');
+const plainText = ref('');
+const encryptedText = ref('');
 const decryptedText = ref('');
 
-const apiBase = 'http://localhost:8000/api';
+const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
-async function generateKey() {
+const encrypt = async () => {
   try {
-    const res = await axios.post(`${apiBase}/key/generate`);
-    keyId.value = res.data.key_id;
-    alert('Key generated: ' + keyId.value);
-  } catch (e) {
-    console.error(e);
-    alert('Error generating key');
-  }
-}
-
-async function encrypt() {
-  try {
-    const res = await axios.post(`${apiBase}/encrypt`, {
-      plaintext: plaintext.value,
-      key_id: keyId.value,
+    const res = await axios.post(`${apiBase}/api/encrypt`, {
+      data: plainText.value,
     });
-    ciphertext.value = res.data.ciphertext;
-    decryptedText.value = '';
+    encryptedText.value = res.data.encrypted;
   } catch (e) {
     console.error(e);
     alert('Encryption failed');
   }
-}
+};
 
-async function decrypt() {
+const decrypt = async () => {
   try {
-    const res = await axios.post(`${apiBase}/decrypt`, {
-      ciphertext: ciphertext.value,
-      key_id: keyId.value,
+    const res = await axios.post(`${apiBase}/api/decrypt`, {
+      encrypted: encryptedText.value,
     });
-    decryptedText.value = res.data.plaintext;
+    decryptedText.value = res.data.decrypted;
   } catch (e) {
     console.error(e);
     alert('Decryption failed');
   }
-}
+};
 </script>
 
 <style scoped>
-.encryption-component {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 1rem;
-  font-family: Arial, sans-serif;
-}
-.form-group {
-  margin-bottom: 1rem;
-}
-label {
-  display: block;
-  margin-bottom: 0.5rem;
-}
-textarea,
-input {
-  width: 100%;
-  padding: 0.5rem;
-  font-size: 1rem;
-}
-.buttons {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-button {
-  padding: 0.5rem 1rem;
-  font-size: 1rem;
-}
-.result {
-  background: #f9f9f9;
-  padding: 0.5rem;
-  margin-top: 1rem;
-}
-pre {
-  white-space: pre-wrap;
-  word-break: break-all;
+.encryption-box {
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 8px;
 }
 </style>
