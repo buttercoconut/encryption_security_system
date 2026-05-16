@@ -1,26 +1,21 @@
-"""Pydantic models for API payloads."""
+# models.py
+from pydantic import BaseModel
 
-from pydantic import BaseModel, Field
-from typing import Optional
+class User(BaseModel):
+    id: int
+    name: str
+    email: str
 
-class EncryptRequest(BaseModel):
-    data: str = Field(..., description="Plaintext data to encrypt")
-    key_id: Optional[str] = Field(None, description="Optional key identifier; if omitted, default key is used")
+class Key(BaseModel):
+    id: int
+    key_value: str
 
-class EncryptResponse(BaseModel):
-    ciphertext: str
-    key_id: str
+class Data(BaseModel):
+    id: int
+    user_id: int
+    encrypted_payload: str
 
-class DecryptRequest(BaseModel):
-    ciphertext: str
-    key_id: str
-
-class DecryptResponse(BaseModel):
-    plaintext: str
-
-class KeyCreateRequest(BaseModel):
-    key_name: str
-
-class KeyCreateResponse(BaseModel):
-    key_id: str
-    key_name: str
+class EncryptionPolicy(BaseModel):
+    id: int
+    algorithm: str
+    key_id: int

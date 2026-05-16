@@ -1,10 +1,13 @@
 <template>
-  <div>
-    <h2>Encryption Security System</h2>
+  <div id="app">
+    <h1>Encryption Security System</h1>
     <EncryptionComponent />
   </div>
 </template>
 
-<script setup>
-import EncryptionComponent from '@/components/EncryptionComponent.vue';
+<script>
+import EncryptionComponent from './components/EncryptionComponent.vue'
+export default {
+  components: { EncryptionComponent }
+}
 </script>

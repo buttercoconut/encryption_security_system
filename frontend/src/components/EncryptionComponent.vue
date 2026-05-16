@@ -1,53 +1,41 @@
 <template>
-  <div class="encryption-box">
-    <h2>Data Encryption / Decryption</h2>
-    <textarea v-model="plainText" placeholder="Enter plain text" rows="4" class="form-control"></textarea>
-    <button @click="encrypt" class="btn btn-primary mt-2">Encrypt</button>
-    <textarea v-model="encryptedText" placeholder="Encrypted output" rows="4" class="form-control mt-2" readonly></textarea>
-    <button @click="decrypt" class="btn btn-secondary mt-2">Decrypt</button>
-    <textarea v-model="decryptedText" placeholder="Decrypted output" rows="4" class="form-control mt-2" readonly></textarea>
+  <div>
+    <h2>Encrypt Data</h2>
+    <input v-model="plainText" placeholder="Enter text" />
+    <button @click="encrypt">Encrypt</button>
+    <p>Encrypted: {{ encrypted }}</p>
+
+    <h2>Decrypt Data</h2>
+    <input v-model="cipherText" placeholder="Enter encrypted text" />
+    <button @click="decrypt">Decrypt</button>
+    <p>Decrypted: {{ decrypted }}</p>
   </div>
 </template>
 
-<script setup>
-import { ref } from 'vue';
-import axios from 'axios';
-
-const plainText = ref('');
-const encryptedText = ref('');
-const decryptedText = ref('');
-
-const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
-
-const encrypt = async () => {
-  try {
-    const res = await axios.post(`${apiBase}/api/encrypt`, {
-      data: plainText.value,
-    });
-    encryptedText.value = res.data.encrypted;
-  } catch (e) {
-    console.error(e);
-    alert('Encryption failed');
+<script>
+import axios from 'axios'
+export default {
+  data() {
+    return {
+      plainText: '',
+      encrypted: '',
+      cipherText: '',
+      decrypted: ''
+    }
+  },
+  methods: {
+    async encrypt() {
+      const res = await axios.post('http://localhost:8000/encrypt', {
+        encrypted_payload: this.plainText
+      })
+      this.encrypted = res.data.encrypted_payload
+    },
+    async decrypt() {
+      const res = await axios.post('http://localhost:8000/decrypt', {
+        encrypted_payload: this.cipherText
+      })
+      this.decrypted = res.data.decrypted_payload
+    }
   }
-};
-
-const decrypt = async () => {
-  try {
-    const res = await axios.post(`${apiBase}/api/decrypt`, {
-      encrypted: encryptedText.value,
-    });
-    decryptedText.value = res.data.decrypted;
-  } catch (e) {
-    console.error(e);
-    alert('Decryption failed');
-  }
-};
-</script>
-
-<style scoped>
-.encryption-box {
-  border: 1px solid #ddd;
-  padding: 20px;
-  border-radius: 8px;
 }
-</style>
+</script>
